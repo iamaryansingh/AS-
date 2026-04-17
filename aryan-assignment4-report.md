@@ -5,7 +5,7 @@
 
 ## 1. Architecture Selection
 
-My Assignment 3 implementation sustained **11,505 msg/s** WebSocket throughput with **0% message loss** across all three test scenarios (500K baseline, 1M stress, 21M endurance). The 1M stress test exposed two structural bottlenecks: **RabbitMQ queue backlog reaching 277K messages** as the consumer could only drain at **1,500 msg/s** while the client sent at 9,800–18,955 msg/s, and **flat table B-tree index growth** slowing writes as row count climbed past 655K. Both bottlenecks map directly to the two Assignment 4 optimizations — replacing RabbitMQ with Redis Streams, and converting the flat table to a time-partitioned schema.
+In Assignment 3 implementation sustained **11,505 msg/s** WebSocket throughput with **0% message loss** across all three test scenarios (500K baseline, 1M stress, 21M endurance). The 1M stress test exposed two structural bottlenecks: **RabbitMQ queue backlog reaching 277K messages** as the consumer could only drain at **1,500 msg/s** while the client sent at 9,800–18,955 msg/s, and **flat table B-tree index growth** slowing writes as row count climbed past 655K. Both bottlenecks map directly to the two Assignment 4 optimizations — replacing RabbitMQ with Redis Streams, and converting the flat table to a time-partitioned schema.
 
 ---
 
@@ -138,24 +138,30 @@ Clients → WebSocket Server → RabbitMQ Queue → Consumer → PostgreSQL (fla
 
 ## 6. Load Test Results
 
-### Test Setup
+### Before vs After — Baseline (500K messages)
 
-| Parameter | Baseline | Stress |
-|-----------|----------|--------|
-| Concurrent users | 1,000 | 500 |
-| Total samples | 117,208 | 412,248 |
-| Duration | 5 min | 30 min |
-| Traffic mix | 70% read / 30% write | 50% / 50% |
+| Metric | A3 | A4 | Improvement |
+|--------|----|----|-------------|
+| WS Throughput | **11,505 msg/s** | **23,345 msg/s** | **+103%** |
+| DB Write Rate | **1,520 msg/s** | **11,605 msg/s** | **+7.6×** |
 
-### Before vs After
+### Before vs After — Stress (1M messages)
 
-| Metric | Before — A3 (Java client) | After — A4 (JMeter) | Improvement |
-|--------|--------------------------|---------------------|-------------|
-| WS Throughput | **11,505 msg/s** | **31,546 msg/s** round-trip confirmed | **+174%** |
-| DB Write Rate | **1,520 msg/s** | **13,941 msg/s** | **+9.3×** |
-| RabbitMQ Backlog | **277K messages** peak | **0** (Redis Streams, AOF) | Eliminated |
-| WS Write Error Rate | **0%** (custom client) | **0.58%** (JMeter) | Acceptable — different tool |
-| HTTP Error Rate | N/A (no metrics endpoint in A3) | **9.2%** on `/metrics` | Identified — future work |
+| Metric | A3 | A4 | Improvement |
+|--------|----|----|-------------|
+| WS Throughput | **9,800 msg/s** | **31,546 msg/s** | **+222%** |
+| DB Write Rate | **1,380 msg/s** | **13,941 msg/s** | **+10.1×** |
+
+### Baseline (500K) vs Stress (1M) — A4
+
+| Metric | Baseline — 500K | Stress — 1M |
+|--------|----------------|-------------|
+| WS Round-trip Throughput | **23,345 msg/s** | **31,546 msg/s** |
+| DB Write Throughput | **11,605 msg/s** | **13,941 msg/s** |
+| Failed Messages | **0 (0%)** | **0 (0%)** |
+| p50 Round-trip | **9,800 ms** | **13,491 ms** |
+| p99 Round-trip | **19,229 ms** | **28,234 ms** |
+| DB Catchup Time | **40.14 s** | **104.58 s** |
 
 ### Baseline Results (A4 JMeter — 1,000 users, 100K calls)
 
