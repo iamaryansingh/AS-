@@ -13,7 +13,7 @@ In Assignment 3 implementation sustained **11,505 msg/s** WebSocket throughput w
 
 **Pipeline (Assignment 3):**
 
-![Assignment 3 Architecture](./images/architecture-v2.png)
+![Assignment 3 Architecture](./images/architecture-v1.png)
 
 ```
 Clients → WebSocket Server → RabbitMQ Queue → Consumer → PostgreSQL (flat table)
