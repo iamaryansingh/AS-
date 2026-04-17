@@ -1,5 +1,5 @@
 # ChatFlow — Performance Optimization
-### CS6650 Assignment 4 · Aryan Singh
+### CS6650 Assignment 4 ·
 
 ---
 
